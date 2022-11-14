@@ -21,9 +21,10 @@ int main(int argc, char* argv[])
         perror("Could not open file");
         exit(EXIT_FAILURE);
     }
-    print_pids(fileno(op), atoi(argv[1]), atoi(argv[2])); //-----------------SEGFAULT HERE
+    // -------------- Running the needed functions---------------
+    print_pids(fileno(op), atoi(argv[1]), atoi(argv[2]));
     count_lines(atoi(argv[2]));
-    print_threads(atoi(argv[1])); //---------------SEGFAULT HERE
+    print_threads(atoi(argv[1]));
     return 0;
 }
 
@@ -32,7 +33,7 @@ pid_t my_fork(){
     if ((int) result >= 0)
         return result;
     perror("Failed to fork\n");
-    exit(EXIT_FAILURE);
+    exit(EXIT_FAILURE);                                                                         //exit with error message
 }
 
 void print_pids(int fd, short unsigned int N, short unsigned int G){
@@ -57,25 +58,27 @@ void print_pids(int fd, short unsigned int N, short unsigned int G){
 
 void count_lines(short unsigned int G)
 {
+    //----------------------    This function counts the lines and prints to screen how many were printed by each proccess gen------
     int status;
     pid_t pid;
     int g=0;
-    char string[100];
+    char string[100]; /// Create an array of size 100 for the string to print, we will use sprintf
     do{
         pid = my_fork();
         if(pid == 0)
             g++;
     }while(pid ==0 && g<G);
-    waitpid(pid,&status,0);
+    waitpid(pid,&status,0);                                                         //Wait for children, such that the ancestor prints last
     sprintf(string,"grep \"generation is %d\" out.txt | wc -l",g);
-    FILE* op = popen(string, "r");
+    FILE* op = popen(string, "r");                                                  //Runs the command in string in the shell environment and returns pointer to read form file
     if(op == NULL){
         perror("failded to execute command");
         exit(EXIT_FAILURE);
     }
     int num_of_lines;
-    fscanf(op ,"%d", &num_of_lines);
+    fscanf(op ,"%d", &num_of_lines);                                                //   take the number of lines we scanned
     printf("Number of lines by processes of generation %d is %d\n", g, num_of_lines);
+    pclose(op); // cloes the FILE OF command
     if(g>0)
     {
         kill(getpid(),SIGKILL);
