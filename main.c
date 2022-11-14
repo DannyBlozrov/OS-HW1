@@ -9,7 +9,7 @@
 
 pid_t my_fork();
 void print_pids(int fd, short unsigned int N, short unsigned int G);
-//void count_lines(short unsigned int G);
+void count_lines(short unsigned int G);
 void print_threads(short unsigned int N);
 void* print_thread_message(void* i);
 
@@ -21,10 +21,9 @@ int main(int argc, char* argv[])
         perror("Could not open file");
         exit(EXIT_FAILURE);
     }
-    print_pids(fileno(stdout),2,2);
-    //print_pids(fileno(op), atoi(argv[1]), atoi(argv[2])); //-----------------SEGFAULT HERE
-    //count_lines(atoi(argv[2]));
-    //print_threads(atoi(argv[1])); //---------------SEGFAULT HERE
+    print_pids(fileno(op), atoi(argv[1]), atoi(argv[2])); //-----------------SEGFAULT HERE
+    count_lines(atoi(argv[2]));
+    print_threads(atoi(argv[1])); //---------------SEGFAULT HERE
     return 0;
 }
 
@@ -55,6 +54,33 @@ void print_pids(int fd, short unsigned int N, short unsigned int G){
         kill(getpid(),SIGKILL);
 }
 
+
+void count_lines(short unsigned int G)
+{
+    int status;
+    pid_t pid;
+    int g=0;
+    char string[100];
+    do{
+        pid = my_fork();
+        if(pid == 0)
+            g++;
+    }while(pid ==0 && g<G);
+    waitpid(pid,&status,0);
+    sprintf(string,"grep \"generation is %d\" out.txt | wc -l",g);
+    FILE* op = popen(string, "r");
+    if(op == NULL){
+        perror("failded to execute command");
+        exit(EXIT_FAILURE);
+    }
+    int num_of_lines;
+    fscanf(op ,"%d", &num_of_lines);
+    printf("Number of lines by processes of generation %d is %d\n", g, num_of_lines);
+    if(g>0)
+    {
+        kill(getpid(),SIGKILL);
+    }
+}
 
 void* print_thread_message(void* id){
     int* i;
